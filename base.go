@@ -65,14 +65,28 @@ type (
 	}
 )
 
+var (
+	// DefaultHTTPClientTimeout is the default timeout for the HTTP Client.
+	DefaultHTTPClientTimeout = 10 * time.Second
+
+	// DefaultTimeLocation is the default time location.
+	DefaultTimeLocation = "UTC"
+
+	// DefaultLoggerLevel is the default logger level.
+	DefaultLoggerLevel = zerolog.InfoLevel
+
+	// DefaultLoggerOutput is the default logger output.
+	DefaultLoggerOutput = &os.Stdout
+)
+
 func (cfg *Config) validate() {
 	if cfg.Logger == nil {
-		logger := zerolog.New(os.Stdout).Level(zerolog.InfoLevel)
+		logger := zerolog.New(*DefaultLoggerOutput).Level(DefaultLoggerLevel)
 		cfg.Logger = &logger
 	}
 
 	if cfg.TimeLocation == "" {
-		cfg.TimeLocation = "UTC"
+		cfg.TimeLocation = DefaultTimeLocation
 	}
 
 	cfg.HTTPClientConfig.validate()
@@ -84,7 +98,7 @@ func (cfg *HTTPClientConfig) validate() {
 	}
 
 	if cfg.Timeout == 0 {
-		cfg.Timeout = 10 * time.Second
+		cfg.Timeout = DefaultHTTPClientTimeout
 	}
 }
 
@@ -121,7 +135,7 @@ func New[envType any](cfg Config) Baser[envType] {
 	return baser
 }
 
-func (baser base[any]) loadTimeLocation(cfg Config) base[any] {
+func (baser *base[any]) loadTimeLocation(cfg Config) *base[any] {
 	location, err := time.LoadLocation(cfg.TimeLocation)
 	if err != nil {
 		panic("failed to load time location: " + err.Error())
@@ -132,7 +146,7 @@ func (baser base[any]) loadTimeLocation(cfg Config) base[any] {
 	return baser
 }
 
-func (baser base[any]) loadEnviromentVariables() base[any] {
+func (baser *base[any]) loadEnviromentVariables() *base[any] {
 	err := env.Parse(&baser.env)
 	if err != nil {
 		panic("failed to load env: " + err.Error())
@@ -141,7 +155,7 @@ func (baser base[any]) loadEnviromentVariables() base[any] {
 	return baser
 }
 
-func (baser base[any]) loadHTTPClient(cfg Config) base[any] {
+func (baser *base[any]) loadHTTPClient(cfg Config) *base[any] {
 	baser.httpClient = &http.Client{
 		Transport: cfg.HTTPClientConfig.Transport,
 		Jar:       cfg.HTTPClientConfig.Jar,
