@@ -1,0 +1,13 @@
+# Output of the go coverage tool
+*.out
+coverage.html
+
+# Vendor
+vendor
+
+# Folders to ignore
+_*
+
+# Files to ignore
+.DS_Store
+.vscode/*.log
