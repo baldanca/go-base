@@ -5,9 +5,14 @@
 // TODO: Makefile
 // TODO: godoc
 
-// Package init provides a way to initialize default resources that is used by almost all services.
-// This package is used to load the environment variables, logger, time location and time now.
-package init
+// Package base provides a way to initialize default resources that is used by almost all services.
+// This package is used to load:
+// - Context
+// - Environment Variables
+// - Logger
+// - Time Resources
+// - HTTP Client
+package base
 
 import (
 	"context"
@@ -20,8 +25,8 @@ import (
 )
 
 type (
-	// Initer is the interface that wraps the basic methods to get the initialized resources.
-	Initer[envType any] interface {
+	// Baser is the interface that wraps the basic methods to get the initialized resources.
+	Baser[envType any] interface {
 		Ctx() context.Context
 		CancelCtx() func()
 		Env() envType
@@ -32,7 +37,7 @@ type (
 		HTTPClient() *http.Client
 	}
 
-	Init[envType any] struct {
+	base[envType any] struct {
 		ctx          context.Context
 		cancelCtx    func()
 		env          envType
@@ -97,79 +102,79 @@ func (cfg *HTTPClientConfig) validate() {
 //		Version     string `env:"VERSION"`
 //		Database    string `env:"DATABASE"`
 //	}
-func New[envType any](cfg Config) Initer[envType] {
+func New[envType any](cfg Config) Baser[envType] {
 	cfg.validate()
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
-	initer := Init[envType]{
+	baser := base[envType]{
 		ctx:       ctx,
 		cancelCtx: cancel,
 		logger:    cfg.Logger,
 	}
 
-	initer.loadEnviromentVariables()
-	initer.loadTimeLocation(cfg)
-	initer.loadHTTPClient(cfg)
+	baser.loadEnviromentVariables()
+	baser.loadTimeLocation(cfg)
+	baser.loadHTTPClient(cfg)
 
-	return initer
+	return baser
 }
 
-func (initer Init[any]) loadTimeLocation(cfg Config) Init[any] {
+func (baser base[any]) loadTimeLocation(cfg Config) base[any] {
 	location, err := time.LoadLocation(cfg.TimeLocation)
 	if err != nil {
 		panic("failed to load time location: " + err.Error())
 	}
 
-	initer.timeLocation = location
+	baser.timeLocation = location
 
-	return initer
+	return baser
 }
 
-func (initer Init[any]) loadEnviromentVariables() Init[any] {
-	err := env.Parse(&initer.env)
+func (baser base[any]) loadEnviromentVariables() base[any] {
+	err := env.Parse(&baser.env)
 	if err != nil {
 		panic("failed to load env: " + err.Error())
 	}
 
-	return initer
+	return baser
 }
 
-func (initer Init[any]) loadHTTPClient(cfg Config) Init[any] {
-	initer.httpClient = &http.Client{
+func (baser base[any]) loadHTTPClient(cfg Config) base[any] {
+	baser.httpClient = &http.Client{
 		Transport: cfg.HTTPClientConfig.Transport,
 		Jar:       cfg.HTTPClientConfig.Jar,
 		Timeout:   cfg.HTTPClientConfig.Timeout,
 	}
 
-	return initer
+	return baser
 }
 
-func (initer Init[any]) Ctx() context.Context {
-	return initer.ctx
+func (baser base[any]) Ctx() context.Context {
+	return baser.ctx
 }
 
-func (initer Init[any]) CancelCtx() func() {
-	return initer.cancelCtx
+func (baser base[any]) CancelCtx() func() {
+	return baser.cancelCtx
 }
 
-func (initer Init[any]) Env() any {
-	return initer.env
+func (baser base[any]) Env() any {
+	return baser.env
 }
 
-func (initer Init[any]) Logger() *zerolog.Logger {
-	return initer.logger
+func (baser base[any]) Logger() *zerolog.Logger {
+	return baser.logger
 }
 
-func (initer Init[any]) TimeLocation() *time.Location {
-	return initer.timeLocation
+func (baser base[any]) TimeLocation() *time.Location {
+	return baser.timeLocation
 }
 
-func (initer Init[any]) TimeNow() time.Time {
-	return time.Now().In(initer.timeLocation)
+func (baser base[any]) TimeNow() time.Time {
+	return time.Now().In(baser.timeLocation)
 }
 
-func (initer Init[any]) HTTPClient() *http.Client {
-	return initer.httpClient
+func (baser base[any]) HTTPClient() *http.Client {
+	return baser.httpClient
 }

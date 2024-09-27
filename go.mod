@@ -1,4 +1,4 @@
-module github.com/baldanca/go-init
+module github.com/baldanca/go-base
 
 go 1.23.1
 
